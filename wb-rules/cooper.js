@@ -78,28 +78,140 @@ defineVirtualDevice("cooper", {
   cells: {
     mode: {
       type: "text",
-      value: "off"
+      value: "off",
+      order: 1
     },
     error: {
       type: "text",
-      value: "OK"
-    }
+      value: "OK",
+      order: 2
+    },
+    heater: {
+      type: "switch",
+      value: true,
+      order: 3
+    },
+    speed: {
+      type: "text",
+      value: "0",
+      order: 4
+    },
+    temperature: {
+      type: "value",
+      value: 27,
+      order: 5
+    },
+    mode_off: {
+      title: "Выключить",
+	  type: "pushbutton",
+      order: 6
+	},
+    speed_1: {
+      title: "Скорость 1",
+	  type: "pushbutton",
+      order: 7
+	},
+    speed_2: {
+      title: "Скорость 2",
+	  type: "pushbutton",
+      order: 8
+	},
+    speed_3: {
+      title: "Скорость 3",
+	  type: "pushbutton",
+      order: 9
+	},
+    TempUp: {
+      title: "+1 градус",
+	  type: "pushbutton",
+      order: 10
+	},
+    TempDown: {
+      title: "-1 градус",
+	  type: "pushbutton",
+      order: 11
+	}
   }
 });
 
+defineRule({
+  whenChanged: ["cooper/mode_off"],
+  then: function (newValue, devName, cellName) {
+    dev['cooper']['mode'] = "off"
+    dev['cooper']['speed'] = "0"
+    dev["wb-modbus-1-0"]["Power"] = false
+  }
+});
+
+defineRule({
+  whenChanged: ["cooper/speed_1"],
+  then: function (newValue, devName, cellName) {
+    dev['cooper']['speed'] = "1"
+    dev["wb-modbus-1-0"]["Power"] = true
+    dev["wb-modbus-1-0"]["Fan speed"] = 1
+  }
+});
+
+defineRule({
+  whenChanged: ["cooper/speed_2"],
+  then: function (newValue, devName, cellName) {
+    dev['cooper']['speed'] = "2"
+    dev["wb-modbus-1-0"]["Power"] = true
+    dev["wb-modbus-1-0"]["Fan speed"] = 2
+  }
+});
+
+defineRule({
+  whenChanged: ["cooper/speed_3"],
+  then: function (newValue, devName, cellName) {
+    dev['cooper']['speed'] = "3"
+    dev["wb-modbus-1-0"]["Power"] = true
+    dev["wb-modbus-1-0"]["Fan speed"] = 3
+  }
+});
+
+defineRule({
+  whenChanged: ["cooper/TempUp"],
+  then: function (newValue, devName, cellName) {
+    dev['cooper']['temperature'] = dev['cooper']['temperature'] + 1
+    dev["wb-modbus-1-0"]["Air temp"] = dev['cooper']['temperature']
+  }
+});
+
+defineRule({
+  whenChanged: ["cooper/TempDown"],
+  then: function (newValue, devName, cellName) {
+    dev['cooper']['temperature'] = dev['cooper']['temperature'] - 1
+    dev["wb-modbus-1-0"]["Air temp"] = dev['cooper']['temperature']
+  }
+});
+
+defineRule({
+  whenChanged: ["cooper/heater"],
+  then: function (newValue, devName, cellName) {
+    if (newValue) {
+      dev["wb-modbus-1-0"]["Power"] = true
+      dev["wb-modbus-1-0"]["Working mode"] = 1
+      dev["cooper"]["mode"] = "heat"
+    } else {
+      dev["wb-modbus-1-0"]["Power"] = true
+      dev["wb-modbus-1-0"]["Working mode"] = 0
+      dev["cooper"]["mode"] = "fan_only"
+    }
+  }
+});
 
 trackMqtt("/devices/cooper/controls/mode", function(message){
   if(message.value == "off") {
       dev["wb-modbus-1-0"]["Power"] = false
     } else if(message.value == "heat") {
       dev["wb-modbus-1-0"]["Power"] = true
-      dev["wb-modbus-1-0"]["Working mode"] = 1
+      dev["wb-modbus-1-0"]["Working mode"] = 1   
     } else if(message.value == "fan_only") {
       dev["wb-modbus-1-0"]["Power"] = true
       dev["wb-modbus-1-0"]["Working mode"] = 0
     }
 });
-
   
 defineRule("change_cooper_mode_power", {
   whenChanged: "wb-modbus-1-0/Power",
@@ -117,13 +229,19 @@ defineRule("change_cooper_mode_power", {
   }
 });
 
-
 defineRule("change_cooper_speed", {
   whenChanged: "wb-modbus-1-0/Fan speed",
   then: function(newValue, devName, cellName){
     if(dev["wb-modbus-1-0"]["Power"]){
       dev["cooper"]["speed"] = newValue
     }
+  }
+});
+
+defineRule("change_cooper_temp", {
+  whenChanged: "wb-modbus-1-0/Air temp",
+  then: function(newValue, devName, cellName){
+      dev['cooper']['temperature'] = newValue
   }
 });
 

@@ -533,13 +533,15 @@ defineRule({
   whenChanged: ["royal_clima/mode_off"],
   then: function (newValue, devName, cellName) {
     dev['royal_clima']['mode'] = "off"   
+    dev['royal_clima']['fan'] = "0";
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/mode_auto"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['mode'] = "auto"   
+    dev['royal_clima']['mode'] = "auto" 
+    dev['royal_clima']['fan'] = ac_state['fan'];
   }
 });
 
