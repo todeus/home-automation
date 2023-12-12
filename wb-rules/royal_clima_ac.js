@@ -91,7 +91,7 @@ function setAirConditioner(mode, temperature, fan, swing){
  ac_state['temperature'] = temperature;
  ac_state['fan'] = fan;
  ac_state['swing'] = swing;
-  
+ log("Mode = {}, Temp = {}, Fan = {}, Swing = {}", ac_state['mode'], ac_state['temperature'], ac_state['fan'], ac_state['swing']);
   
  if(mode == "off") {
    publish("/devices/wb-msw-v3_86/controls/Play from ROM1/on","1") // КОНДИЦИОНЕР ВЫКЛЮЧЕН
@@ -533,15 +533,13 @@ defineRule({
   whenChanged: ["royal_clima/mode_off"],
   then: function (newValue, devName, cellName) {
     dev['royal_clima']['mode'] = "off"   
-    dev['royal_clima']['fan'] = "0";
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/mode_auto"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['mode'] = "auto" 
-    dev['royal_clima']['fan'] = ac_state['fan'];
+    dev['royal_clima']['mode'] = "auto"; 
   }
 });
 
@@ -555,42 +553,42 @@ defineRule({
 defineRule({
   whenChanged: ["royal_clima/mode_cool"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['mode'] = "cool"   
+    dev['royal_clima']['mode'] = "cool";
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/mode_dry"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['mode'] = "dry"   
+    dev['royal_clima']['mode'] = "dry";
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/speed_auto"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['fan'] = "1"   
+    dev['royal_clima']['fan'] = "1";  
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/speed_min"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['fan'] = "2"   
+    dev['royal_clima']['fan'] = "2";
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/speed_mid"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['fan'] = "3"   
+    dev['royal_clima']['fan'] = "3";
   }
 });
 
 defineRule({
   whenChanged: ["royal_clima/speed_max"],
   then: function (newValue, devName, cellName) {
-    dev['royal_clima']['fan'] = "4"   
+    dev['royal_clima']['fan'] = "4";
   }
 });
 
@@ -608,26 +606,43 @@ defineRule({
   }
 });
 
-trackMqtt("/devices/royal_clima/controls/mode/on", function(message){
-  dev['royal_clima']['mode'] = message.value;
-  ac_state['mode'] = message.value;
-  setAirConditioner(message.value, ac_state['temperature'], ac_state['fan'], ac_state['swing']);
+defineRule({
+  whenChanged: "royal_clima/mode",
+  then: function(newValue, devName, cellName){
+    setAirConditioner(newValue, dev['royal_clima']['temperature'], dev['royal_clima']['fan'], dev['royal_clima']['swing']);
+    log("mode");
+  }
 });
 
-trackMqtt("/devices/royal_clima/controls/fan/on", function(message){
-  dev['royal_clima']['fan'] = message.value;
-  ac_state['fan'] = message.value;
-  setAirConditioner(ac_state['mode'], ac_state['temperature'], message.value, ac_state['swing']);
+defineRule({
+  whenChanged: "royal_clima/fan",
+  then: function(newValue, devName, cellName){
+    setAirConditioner(dev['royal_clima']['mode'], dev['royal_clima']['temperature'], newValue, dev['royal_clima']['swing']);
+    log("fan");
+  }
 });
 
-trackMqtt("/devices/royal_clima/controls/swing/on", function(message){
-  ac_state['swing'] = dev['royal_clima']['swing'];
+defineRule({
+  whenChanged: "royal_clima/swing",
+  then: function(newValue, devName, cellName){
+    setAirConditioner(dev['royal_clima']['mode'], dev['royal_clima']['temperature'], dev['royal_clima']['fan'], newValue);
+    log("swing");
+  }
 });
 
 defineRule({
   whenChanged: "royal_clima/temperature",
   then: function(newValue, devName, cellName){
-    setAirConditioner(ac_state['mode'], newValue, ac_state['fan'], ac_state['swing']);
+    setAirConditioner(dev['royal_clima']['mode'], newValue, dev['royal_clima']['fan'], dev['royal_clima']['swing']);
+    log("temperature");
   }
+});
+
+trackMqtt("/devices/royal_clima/controls/mode/on", function(message){
+  dev['royal_clima']['mode'] = message.value;
+});
+
+trackMqtt("/devices/royal_clima/controls/fan/on", function(message){
+  dev['royal_clima']['fan'] = message.value;
 });
 
